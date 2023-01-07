@@ -4,6 +4,7 @@ import jinja2
 from pathlib import Path
 import aiohttp_session
 from typing import Callable, Awaitable, Dict, Any
+from gattlib import GATTRequester
 
 
 router = web.RouteTableDef()
@@ -66,6 +67,12 @@ async def greet_user(request: web.Request) -> Dict[str, Any]:
 @require_login
 @aiohttp_jinja2.template("target.html")
 async def show_present(request: web.Request) -> Dict[str, Any]:
+    with open(str(Path(__file__).parent / "devices.txt")) as f:
+        devices = f.readlines()
+    for device in devices:
+        req = GATTRequester(device)
+        req.write_by_handle(0x16, b'\x57\x01\x00')
+    print('Command execution successful')
     return {}
 
 
