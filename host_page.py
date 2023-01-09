@@ -7,25 +7,6 @@ from typing import Callable, Awaitable, Dict, Any
 from gattlib import GATTRequester
 
 
-with open(str(Path(__file__).parent / "devices.txt")) as f:
-    devices = f.readlines()
-print("Importing")
-print("Imported")
-import time
-print("posttime")
-for address in devices:
-    print(address)
-    req = GATTRequester(address, False)
-    print("Pre-Connect")
- #   req.connect(False, 'random')
-    print("Pre-sleep")
-    time.sleep(1)
-  #  if req.is_connected():
-   #     req.write_by_handle(0x16, b'\x57\x01\x00')
-
-
-
-
 router = web.RouteTableDef()
 _WebHandler = Callable[[web.Request], Awaitable[web.StreamResponse]]
 
@@ -106,12 +87,10 @@ async def show_present(request: web.Request) -> Dict[str, Any]:
             time.sleep(1)
             if req.is_connected():
                 req.write_by_handle(0x16, b'\x57\x01\x00')
+                print("Message Sent")
                 req.disconnect()
                 break
-            else:
-                req.connect(False, 'random')
             n_remaining -= 1
-        #req.connect(False, 'random')
     print('Command execution successful')
     return {}
 
