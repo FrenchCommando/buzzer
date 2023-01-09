@@ -1,4 +1,4 @@
 #!/bin/sh
 
 docker build -t buzzerbuild .
-docker run -d --rm -p 8890:8890 buzzerbuild
+docker run --rm -p 1337:1337 buzzerbuild
