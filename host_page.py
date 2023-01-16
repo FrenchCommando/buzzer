@@ -94,8 +94,8 @@ async def login_apply(request: web.Request):
     authorization_url_value, state = flow.authorization_url()
     logger.info("Authorization Url end")
     session["state"] = state
-    logger.info(f"Authorization Url {authorization_url_value=}")
-    logger.info(f"Authorization Url {state=}")
+    logger.info(f"Authorization Url {authorization_url_value}")
+    logger.info(f"Authorization Url {state}")
     raise web.HTTPFound(authorization_url_value)
 
 
