@@ -18,9 +18,6 @@ from pip._vendor import cachecontrol
 from gattlib import GATTRequester
 
 
-logging.basicConfig(filename=str(Path(__file__).parent / 'buzzer-log.txt'), filemode='a', level=logging.DEBUG)
-
-
 with open(str(Path(__file__).parent / "devices.txt")) as f:
     devices = f.readlines()
 with open(str(Path(__file__).parent / "authorized_emails.txt")) as f:
@@ -176,4 +173,8 @@ async def init_app() -> web.Application:
 
 
 if __name__ == '__main__':
-    web.run_app(init_app(), port=1337)
+    app = init_app()
+    log_file = str(Path(__file__).parent / 'buzzer-log.txt')
+    print(log_file)
+    logging.basicConfig(filename=log_file, filemode='a', level=logging.DEBUG)
+    web.run_app(app, port=1337)
