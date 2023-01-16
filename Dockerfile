@@ -8,7 +8,7 @@ RUN apt-get install -y pkg-config \
   libbluetooth-dev \
   libglib2.0-dev \
   python3-dev
-RUN pip install --upgrade pip
+RUN pip install --root-user-action=ignore --upgrade pip
 RUN pip install --root-user-action=ignore -r requirements.txt
 RUN pip install --root-user-action=ignore gunicorn
 RUN pip install --root-user-action=ignore gattlib
