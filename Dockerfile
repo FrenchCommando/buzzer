@@ -13,4 +13,4 @@ RUN pip install --root-user-action=ignore -r requirements.txt
 RUN pip install --root-user-action=ignore gunicorn
 RUN pip install --root-user-action=ignore gattlib
 COPY . /
-CMD [ "python", "-m", "host_page" ]
+CMD [ "python", "-u", "host_page.py" ]
