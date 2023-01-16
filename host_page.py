@@ -1,11 +1,42 @@
+import aiohttp
+import os
+import pathlib
+import requests
+import time
 from aiohttp import web
 import aiohttp_jinja2
+import aiohttp_session
 import jinja2
 from pathlib import Path
-import aiohttp_session
 from typing import Callable, Awaitable, Dict, Any
+import google.oauth2.credentials
+import google_auth_oauthlib.flow
+import google.auth.transport.requests
+from google.oauth2 import id_token
+from pip._vendor import cachecontrol
 from gattlib import GATTRequester
 
+
+# os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1" # to allow Http traffic for local dev
+
+client_secrets_file = os.path.join(pathlib.Path(__file__).parent, "client_secret.json")
+flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
+    client_secrets_file=client_secrets_file,
+    scopes=[
+        "https://www.googleapis.com/auth/userinfo.profile",
+        "https://www.googleapis.com/auth/userinfo.email",
+        "openid",
+    ],
+    redirect_uri="http://localhost/callback",
+)
+
+authorization_url, state = flow.authorization_url(
+    # Enable offline access so that you can refresh an access token without
+    # re-prompting the user for permission. Recommended for web server apps.
+    access_type='offline',
+    # Enable incremental authorization. Recommended as a best practice.
+    include_granted_scopes='true',
+)
 
 router = web.RouteTableDef()
 _WebHandler = Callable[[web.Request], Awaitable[web.StreamResponse]]
@@ -24,9 +55,15 @@ async def check_login(
     require_login_variable = getattr(handler, "__require_login__", False)
     session = await aiohttp_session.get_session(request)
     username = session.get("username")
+    email = session.get("email")
     if require_login_variable:
         if not username:
             raise web.HTTPSeeOther(location="/login")
+        else:
+            if email in ['frenchcommando@gmail.com']:
+                return await handler(request)
+            else:
+                raise aiohttp.web.HTTPUnauthorized()
     return await handler(request)
 
 
@@ -37,19 +74,47 @@ async def login(request: web.Request) -> Dict[str, Any]:
 
 
 @router.post("/login")
-async def login_apply(request: web.Request) -> None:
+async def login_apply(request: web.Request):
     session = await aiohttp_session.get_session(request)
-    form = await request.post()
-    print("Logging")
-    session["username"] = form.get("login", "LoggedInUser")
-    raise web.HTTPSeeOther(location="/")
+    authorization_url, state = flow.authorization_url()
+    session["state"] = state
+    raise web.HTTPFound(authorization_url)
+
+
+@router.get("/callback")
+async def callback(request: web.Request):
+    flow.fetch_token(code=request.rel_url.query.get("code", ''))
+    session = await aiohttp_session.get_session(request)
+    if not session["state"] == request.rel_url.query.get("state", ''):
+        raise aiohttp.web.HTTPUnauthorized()
+
+    credentials = flow.credentials
+    request_session = requests.session()
+    cached_session = cachecontrol.CacheControl(request_session)
+    token_request = google.auth.transport.requests.Request(session=cached_session)
+
+    id_info = id_token.verify_oauth2_token(
+        id_token=credentials._id_token,
+        request=token_request,
+        audience=credentials.client_id,
+    )
+
+    session["google_id"] = id_info.get("sub")
+    session["name"] = id_info.get("name")
+    session["username"] = session["name"]
+    session["email"] = id_info.get("email")
+
+    raise web.HTTPSeeOther(location="/open")
 
 
 @router.post("/logout")
 async def logout(request: web.Request) -> None:
     session = await aiohttp_session.get_session(request)
-    print("logging out")
     session["username"] = None
+    session["google_id"] = None
+    session["name"] = None
+    session["username"] = None
+    session["email"] = None
     raise web.HTTPSeeOther(location="/")
 
 
@@ -72,10 +137,6 @@ async def greet_user(request: web.Request) -> Dict[str, Any]:
 async def show_present(request: web.Request) -> Dict[str, Any]:
     with open(str(Path(__file__).parent / "devices.txt")) as f:
         devices = f.readlines()
-    print("Importing")
-    print("Imported")
-    import time
-    print("posttime")
     for device in devices:
         print(device)
         req = GATTRequester(device, False)
