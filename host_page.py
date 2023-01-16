@@ -18,9 +18,9 @@ from pip._vendor import cachecontrol
 from gattlib import GATTRequester
 
 
-log_file = 'buzzer.log'
+log_file = os.path.join('buzzerlog', 'buzzer.log')
 print(log_file)
-logging.basicConfig(filename=log_file, level=logging.DEBUG)
+logging.basicConfig(filename=log_file, filemode='a+', level=logging.DEBUG)
 logger = logging.getLogger("buzzer_app")
 logger.setLevel(logging.DEBUG)
 logger.info("Logger is setup")
