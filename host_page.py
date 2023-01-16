@@ -18,6 +18,13 @@ from pip._vendor import cachecontrol
 from gattlib import GATTRequester
 
 
+log_file = str(Path(__file__).parent / 'buzzer-log.txt')
+print(log_file)
+logging.basicConfig(filename=log_file, filemode='a', level=logging.DEBUG)
+logger = logging.getLogger("buzzer_app")
+logger.info("Logger is setup")
+
+
 with open(str(Path(__file__).parent / "devices.txt")) as f:
     devices = f.readlines()
 with open(str(Path(__file__).parent / "authorized_emails.txt")) as f:
@@ -80,6 +87,7 @@ async def login(request: web.Request) -> Dict[str, Any]:
 
 @router.post("/login")
 async def login_apply(request: web.Request):
+    logger.info("Requesting login")
     session = await aiohttp_session.get_session(request)
     authorization_url_value, state = flow.authorization_url()
     session["state"] = state
@@ -88,6 +96,7 @@ async def login_apply(request: web.Request):
 
 @router.get("/callback")
 async def callback(request: web.Request):
+    logger.info("Running callback")
     flow.fetch_token(code=request.rel_url.query.get("code", ''))
     session = await aiohttp_session.get_session(request)
     if not session["state"] == request.rel_url.query.get("state", ''):
@@ -114,6 +123,7 @@ async def callback(request: web.Request):
 
 @router.post("/logout")
 async def logout(request: web.Request) -> None:
+    logger.info("Logging out")
     session = await aiohttp_session.get_session(request)
     session["username"] = None
     session["google_id"] = None
@@ -132,30 +142,31 @@ async def username_ctx_processor(request: web.Request) -> Dict[str, Any]:
 @router.get('/')
 @aiohttp_jinja2.template("base.html")
 async def greet_user(request: web.Request) -> Dict[str, Any]:
-    print("Home")
+    logger.info("Home Page")
     return {}
 
 
 @router.get('/open')
 @require_login
 @aiohttp_jinja2.template("target.html")
-async def show_present(request: web.Request) -> Dict[str, Any]:
+async def open_door(request: web.Request) -> Dict[str, Any]:
+    logger.info("Opening door")
     for device in devices:
-        print(device)
+        logger.info(device)
         req = GATTRequester(device, False)
-        print("Pre-Connect")
+        logger.info("Pre-Connect")
         req.connect(False, 'random')
         n_remaining = 10
         while n_remaining > 0:
-            print("Pre-sleep")
+            logger.info("Pre-sleep")
             time.sleep(1)
             if req.is_connected():
                 req.write_by_handle(0x16, b'\x57\x01\x00')
-                print("Message Sent")
+                logger.info("Message Sent")
                 req.disconnect()
                 break
             n_remaining -= 1
-    print('Command execution successful')
+    logger.info('Command execution successful')
     return {}
 
 
@@ -173,8 +184,4 @@ async def init_app() -> web.Application:
 
 
 if __name__ == '__main__':
-    app = init_app()
-    log_file = str(Path(__file__).parent / 'buzzer-log.txt')
-    print(log_file)
-    logging.basicConfig(filename=log_file, filemode='a', level=logging.DEBUG)
-    web.run_app(app, port=1337)
+    web.run_app(init_app(), port=1337)
