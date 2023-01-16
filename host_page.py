@@ -17,7 +17,11 @@ from pip._vendor import cachecontrol
 from gattlib import GATTRequester
 
 
-# os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1" # to allow Http traffic for local dev
+with open(str(Path(__file__).parent / "devices.txt")) as f:
+    devices = f.readlines()
+with open(str(Path(__file__).parent / "authorized_emails.txt")) as f:
+    authorized_emails = [s.strip() for s in f.readlines()]
+
 
 client_secrets_file = os.path.join(pathlib.Path(__file__).parent, "client_secret.json")
 flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
@@ -60,7 +64,7 @@ async def check_login(
         if not username:
             raise web.HTTPSeeOther(location="/login")
         else:
-            if email in ['frenchcommando@gmail.com']:
+            if email in authorized_emails:
                 return await handler(request)
             else:
                 raise aiohttp.web.HTTPUnauthorized()
@@ -76,9 +80,9 @@ async def login(request: web.Request) -> Dict[str, Any]:
 @router.post("/login")
 async def login_apply(request: web.Request):
     session = await aiohttp_session.get_session(request)
-    authorization_url, state = flow.authorization_url()
+    authorization_url_value, state = flow.authorization_url()
     session["state"] = state
-    raise web.HTTPFound(authorization_url)
+    raise web.HTTPFound(authorization_url_value)
 
 
 @router.get("/callback")
@@ -104,7 +108,7 @@ async def callback(request: web.Request):
     session["username"] = session["name"]
     session["email"] = id_info.get("email")
 
-    raise web.HTTPSeeOther(location="/open")
+    raise web.HTTPSeeOther(location="/")
 
 
 @router.post("/logout")
@@ -135,8 +139,6 @@ async def greet_user(request: web.Request) -> Dict[str, Any]:
 @require_login
 @aiohttp_jinja2.template("target.html")
 async def show_present(request: web.Request) -> Dict[str, Any]:
-    with open(str(Path(__file__).parent / "devices.txt")) as f:
-        devices = f.readlines()
     for device in devices:
         print(device)
         req = GATTRequester(device, False)
