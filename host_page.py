@@ -22,6 +22,7 @@ log_file = 'buzzer-log.txt'
 print(log_file)
 logging.basicConfig(filename=log_file, filemode='a+', level=logging.DEBUG)
 logger = logging.getLogger("buzzer_app")
+logger.setLevel(logging.DEBUG)
 logger.info("Logger is setup")
 
 
