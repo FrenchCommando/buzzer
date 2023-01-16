@@ -90,8 +90,12 @@ async def login(request: web.Request) -> Dict[str, Any]:
 async def login_apply(request: web.Request):
     logger.info("Requesting login")
     session = await aiohttp_session.get_session(request)
+    logger.info("Requesting session")
     authorization_url_value, state = flow.authorization_url()
+    logger.info("Authorization Url end")
     session["state"] = state
+    logger.info(f"Authorization Url {authorization_url_value=}")
+    logger.info(f"Authorization Url {state=}")
     raise web.HTTPFound(authorization_url_value)
 
 
