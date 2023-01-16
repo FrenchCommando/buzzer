@@ -1,4 +1,5 @@
 import aiohttp
+import logging
 import os
 import pathlib
 import requests
@@ -15,6 +16,9 @@ import google.auth.transport.requests
 from google.oauth2 import id_token
 from pip._vendor import cachecontrol
 from gattlib import GATTRequester
+
+
+logging.basicConfig(filename='buzzer-log.txt', filemode='a', level=logging.DEBUG)
 
 
 with open(str(Path(__file__).parent / "devices.txt")) as f:
