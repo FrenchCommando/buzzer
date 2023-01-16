@@ -143,6 +143,8 @@ async def username_ctx_processor(request: web.Request) -> Dict[str, Any]:
 @aiohttp_jinja2.template("base.html")
 async def greet_user(request: web.Request) -> Dict[str, Any]:
     logger.info("Home Page")
+    print("Home")
+    print(f"{logger}")
     return {}
 
 
