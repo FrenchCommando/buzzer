@@ -26,6 +26,15 @@ logger.setLevel(logging.DEBUG)
 logger.info("Logger is setup")
 
 
+from logging import FileHandler
+for h in logger.handlers:
+    # check the handler is a file handler
+    # (rotating handler etc. inherit from this, so it will still work)
+    # stream handlers write to stderr, so their filename is not useful to us
+    if isinstance(h, FileHandler):
+        # h.stream should be an open file handle, it's name is the path
+        print(h.stream.name)
+
 with open(str(Path(__file__).parent / "devices.txt")) as f:
     devices = f.readlines()
 with open(str(Path(__file__).parent / "authorized_emails.txt")) as f:
